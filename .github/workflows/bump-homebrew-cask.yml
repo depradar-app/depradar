@@ -1,0 +1,81 @@
+name: Bump Homebrew cask
+
+# Runs when a draft release created by release.yml is manually published,
+# not on tag push: a draft release's assets aren't publicly downloadable,
+# so the cask can't point at them until a human publishes the release.
+on:
+  release:
+    types: [published]
+
+jobs:
+  bump-cask:
+    if: startsWith(github.event.release.tag_name, 'v')
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+    steps:
+      - name: Download the macOS artifact
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern "*.dmg" --dir .
+
+      - name: Compute version, file name and sha256
+        id: info
+        run: |
+          set -eu
+          version="${TAG#v}"
+          [ "$(ls ./*.dmg | wc -l)" -eq 1 ] || { echo "expected exactly one .dmg"; ls ./*.dmg; exit 1; }
+          file="$(basename ./*.dmg)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+          echo "sha256=$(shasum -a 256 "./$file" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Regenerate the cask in depradar-app/homebrew-tap
+        env:
+          VERSION: ${{ steps.info.outputs.version }}
+          FILE: ${{ steps.info.outputs.file }}
+          SHA256: ${{ steps.info.outputs.sha256 }}
+        run: |
+          set -eu
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/depradar-app/homebrew-tap.git" tap
+          cd tap
+
+          # Never move the cask backwards (e.g. a patch release of an older
+          # line published after a newer one).
+          current="$(sed -n 's/^ *version "\(.*\)"/\1/p' Casks/depradar.rb | head -n1)"
+          if [ -n "$current" ] && [ "$current" != "$VERSION" ] \
+             && [ "$(printf '%s\n%s\n' "$current" "$VERSION" | sort -V | tail -n1)" != "$VERSION" ]; then
+            echo "Cask is already at $current, newer than $VERSION: leaving it alone."
+            exit 0
+          fi
+
+          url_file="$(printf '%s' "$FILE" | sed "s/${VERSION}/#{version}/")"
+          cat > Casks/depradar.rb <<RUBY
+          cask "depradar" do
+            version "${VERSION}"
+            sha256 "${SHA256}"
+
+            url "https://github.com/depradar-app/depradar/releases/download/v#{version}/${url_file}"
+            name "DepRadar"
+            desc "Detects outdated and vulnerable dependencies in local projects and GitHub repositories"
+            homepage "https://github.com/depradar-app/depradar"
+
+            auto_updates true
+            depends_on macos: ">= :high_sierra"
+
+            app "DepRadar.app"
+
+            zap trash: [
+              "~/Library/Application Support/com.sikander.depradar",
+              "~/Library/Caches/com.sikander.depradar",
+              "~/Library/Saved Application State/com.sikander.depradar.savedState",
+              "~/Library/WebKit/com.sikander.depradar",
+            ]
+          end
+          RUBY
+
+          git config user.name "depradar-release-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add Casks/depradar.rb
+          git commit -m "Bump depradar to ${VERSION}" || { echo "No changes to commit"; exit 0; }
+          git push

@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" href="assets/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DepRadar</title>
+    <script src="/logic.cjs" defer></script>
+    <script src="/i18n.cjs" defer></script>
+    <script src="/main.js" defer></script>
+  </head>
+
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h1 class="brand">
+            <img class="brand-logo" src="assets/favicon.png" alt="" />
+            <span data-i18n="app.title">DepRadar</span>
+          </h1>
+          <div class="brand-actions">
+            <button
+              id="theme-btn"
+              class="icon-btn"
+              type="button"
+              data-i18n-title="theme.toggle"
+              title="Light / dark theme"
+            ></button>
+            <button
+              id="add-project-btn"
+              class="icon-btn"
+              type="button"
+              data-i18n-title="sidebar.addButton"
+              title="Add a project"
+            >
+              +
+            </button>
+          </div>
+        </div>
+        <div id="project-list" class="project-list"></div>
+
+        <div class="sidebar-footer">
+          <div class="sidebar-footer-row">
+            <select id="lang-select" class="lang-select" data-i18n-aria-label="sidebar.languageLabel" aria-label="Language"></select>
+            <button id="app-version-btn" class="app-version" type="button"></button>
+          </div>
+          <button id="scan-all-btn" class="update-btn" type="button" data-i18n="sidebar.scanAll">Scan all</button>
+          <button id="check-update-btn" class="update-btn" type="button" data-i18n="sidebar.checkUpdate">Check for update</button>
+          <p id="update-status" class="update-status hidden"></p>
+        </div>
+      </aside>
+      <div id="sidebar-resizer" class="sidebar-resizer" role="separator" aria-orientation="vertical" tabindex="0"></div>
+
+      <main class="main-content">
+        <div id="app-notice" class="app-notice hidden" role="status"></div>
+        <div id="empty-state" class="empty-state">
+          <div class="empty-icon-box"><img src="assets/favicon.png" alt="" /></div>
+          <h2 data-i18n="empty.title">No project selected</h2>
+          <p class="subtitle" data-i18n="empty.subtitle">
+            Add a local project or a GitHub repository to detect its outdated dependencies.
+          </p>
+          <button id="add-project-btn-main" class="add-btn big" type="button" data-i18n="empty.addButton">+ Add a project</button>
+        </div>
+
+        <div id="project-view" class="project-view hidden">
+          <header class="project-view-header">
+            <div class="project-view-title">
+              <span id="project-badge" class="saved-badge"></span>
+              <span id="project-title" class="project-title"></span>
+            </div>
+            <div class="project-view-actions">
+              <button id="refresh-btn" type="button" class="icon-btn" data-i18n-title="project.refreshButton" title="Refresh">↻</button>
+              <button id="export-btn" type="button" class="icon-btn" data-i18n-title="project.exportTitle" title="Export report">⬇</button>
+              <button id="delete-project-btn" type="button" class="icon-btn" data-i18n-title="project.deleteTitle" title="Delete this project">✕</button>
+            </div>
+          </header>
+
+          <section id="status" class="status hidden"></section>
+
+          <div id="filters-bar" class="filters-bar hidden">
+            <input id="search-input" type="text" data-i18n-placeholder="filters.searchPlaceholder" placeholder="Search a package…" />
+            <div id="status-filter" class="status-filter">
+              <button type="button" class="filter-pill" data-status="major" data-i18n="status.major">Breaking</button>
+              <button type="button" class="filter-pill" data-status="outdated" data-i18n="status.outdated">Outdated</button>
+              <button type="button" class="filter-pill" data-status="unknown" data-i18n="status.unknown">Unknown</button>
+              <button type="button" class="filter-pill" data-status="uptodate" data-i18n="status.uptodate">Up to date</button>
+              <button id="vuln-filter-pill" type="button" class="filter-pill vuln-filter" data-i18n="filters.vulnerableOnly">Vulnerable</button>
+            </div>
+          </div>
+
+          <section id="results" class="results"></section>
+        </div>
+      </main>
+    </div>
+
+    <div id="add-modal" class="modal-overlay hidden">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-header">
+          <h2 id="modal-title" data-i18n="modal.addProject.title">Add a project</h2>
+          <button id="close-modal-btn" type="button" class="modal-close-btn" data-i18n-title="modal.closeTitle" title="Close">✕</button>
+        </div>
+
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="local" type="button" data-i18n="tab.local">Local project</button>
+          <button class="tab-btn" data-tab="github" type="button" data-i18n="tab.github">GitHub repository</button>
+        </div>
+
+        <form id="local-form" class="tab-panel" data-panel="local">
+          <label for="local-path" data-i18n="form.local.pathLabel">Folder path</label>
+          <div class="input-row">
+            <input id="local-path" type="text" data-i18n-placeholder="form.local.pathPlaceholder" placeholder="/path/to/my-project" required />
+            <button id="browse-btn" type="button" data-i18n="form.local.browseButton">Browse…</button>
+          </div>
+          <button type="submit" class="scan-btn" data-i18n="form.submitButton">Add</button>
+        </form>
+
+        <form id="github-form" class="tab-panel hidden" data-panel="github">
+          <label for="github-repo" data-i18n="form.github.repoLabel">Repository</label>
+          <input
+            id="github-repo"
+            type="text"
+            data-i18n-placeholder="form.github.repoPlaceholder"
+            placeholder="owner/repo or https://github.com/owner/repo"
+            required
+          />
+          <label for="github-token" data-i18n="form.github.tokenLabel">GitHub token (optional, raises the API rate limit)</label>
+          <input id="github-token" type="password" data-i18n-placeholder="form.github.tokenPlaceholder" placeholder="ghp_..." autocomplete="off" />
+          <button id="github-token-remove" type="button" class="link-btn hidden" data-i18n="form.github.tokenRemove">Remove the saved token</button>
+          <p class="hint" data-i18n="form.github.hint">Scans the whole repository, including nested folders, for dependency manifests.</p>
+          <button type="submit" class="scan-btn" data-i18n="form.submitButton">Add</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="confirm-modal" class="modal-overlay hidden">
+      <div class="modal confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+        <div class="modal-header">
+          <h2 id="confirm-modal-title" data-i18n="confirm.title">Confirm deletion</h2>
+          <button id="confirm-modal-close-btn" type="button" class="modal-close-btn" data-i18n-title="modal.closeTitle" title="Close">✕</button>
+        </div>
+        <p id="confirm-modal-message" class="confirm-message"></p>
+        <div class="confirm-actions">
+          <button id="confirm-cancel-btn" type="button" class="save-btn" data-i18n="confirm.cancelButton">Cancel</button>
+          <button id="confirm-ok-btn" type="button" class="danger-btn" data-i18n="confirm.deleteButton">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="about-modal" class="modal-overlay hidden">
+      <div class="modal about-modal" role="dialog" aria-modal="true" aria-labelledby="about-modal-title">
+        <div class="modal-header">
+          <h2 id="about-modal-title" data-i18n="about.title">About DepRadar</h2>
+          <button id="about-modal-close-btn" type="button" class="modal-close-btn" data-i18n-title="modal.closeTitle" title="Close">✕</button>
+        </div>
+        <p class="about-description" data-i18n="about.description">
+          Detects outdated Rust, JavaScript, Python, Go, PHP, Ruby, and Java dependencies — locally or on a GitHub repository.
+        </p>
+        <p id="about-version" class="about-version mono"></p>
+        <a
+          id="about-repo-link"
+          class="about-link"
+          href="https://github.com/depradar-app/depradar"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-i18n="about.repoLink"
+          >View on GitHub</a
+        >
+      </div>
+    </div>
+
+  </body>
+</html>

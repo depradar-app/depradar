@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DepRadar</title>
+    <link rel="icon" href="favicon.png" />
+    <meta
+      name="description"
+      content="DepRadar detects outdated Rust, JavaScript, Python, Go, PHP, Ruby, and Java dependencies — locally or on a GitHub repository."
+    />
+    <style>
+      @font-face {
+        font-family: "Outfit";
+        font-style: normal;
+        font-weight: 400 800;
+        font-display: swap;
+        src: url("fonts/Outfit.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "JetBrains Mono";
+        font-style: normal;
+        font-weight: 400 600;
+        font-display: swap;
+        src: url("fonts/JetBrainsMono.woff2") format("woff2");
+      }
+      :root {
+        --bg: #0b0e13;
+        --surface: #141821;
+        --border: #232936;
+        --text: #e8ebf0;
+        --text-muted: #8b93a1;
+        --accent: #3563e9;
+        --accent-fg: #ffffff;
+        --link-hover: #91a8ff;
+        --danger: #f0876b;
+        --radius: 10px;
+        --font: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font);
+        line-height: 1.55;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      a:hover {
+        color: var(--link-hover);
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 1.1rem 1.5rem 0;
+      }
+
+      .topbar .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .topbar .brand img {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+      }
+
+      #lang-select {
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0.35rem 0.55rem;
+        font-size: 0.82rem;
+      }
+
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 0 1.5rem 5rem;
+      }
+
+      header.hero {
+        text-align: center;
+        padding: 3rem 1.5rem 3rem;
+      }
+
+      header.hero img {
+        width: 96px;
+        height: 96px;
+        border-radius: 22px;
+      }
+
+      header.hero h1 {
+        font-size: 2.4rem;
+        margin: 1.25rem 0 0.5rem;
+      }
+
+      header.hero p.tagline {
+        color: var(--text-muted);
+        font-size: 1.15rem;
+        max-width: 40rem;
+        margin: 0 auto 8px;
+      }
+
+      header.hero .ecosystems-line {
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        color: #5b6472;
+        margin: 0 0 1.9rem;
+      }
+
+      .cta-row {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.65rem 1.15rem;
+        border-radius: var(--radius);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        border: 1px solid var(--border);
+        color: var(--text);
+      }
+
+      .btn.primary {
+        background: var(--accent);
+        color: var(--accent-fg);
+        border-color: var(--accent);
+      }
+
+      section {
+        margin-top: 3.5rem;
+      }
+
+      section h2 {
+        font-size: 1.5rem;
+        margin-bottom: 0.4rem;
+      }
+
+      section > p.lead {
+        color: var(--text-muted);
+        margin-top: 0;
+      }
+
+      .platform-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+
+      .platform-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.1rem 1.2rem;
+      }
+
+      .platform-card h3 {
+        margin: 0 0 0.6rem;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+
+      .platform-card code,
+      pre code {
+        font-family: var(--mono);
+        font-size: 0.82rem;
+      }
+
+      .cmd-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.4rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .platform-card .cmd {
+        display: block;
+        flex: 1;
+        min-width: 0;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.5rem 0.65rem;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+
+      .copy-btn {
+        flex-shrink: 0;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        border-radius: 6px;
+        padding: 0.4rem 0.55rem;
+        font-size: 0.85rem;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .copy-btn:hover {
+        color: var(--text);
+      }
+
+      .copy-btn.copied {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      pre.one-liner {
+        position: relative;
+        padding-right: 3rem;
+      }
+
+      pre.one-liner .copy-btn {
+        position: absolute;
+        top: 0.55rem;
+        right: 0.55rem;
+      }
+
+      .platform-card .note {
+        display: block;
+        margin-top: 0.4rem;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+      }
+
+      .platform-card a.direct {
+        font-size: 0.82rem;
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      pre.one-liner {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.9rem 1.1rem;
+        overflow-x: auto;
+        margin: 1.25rem 0 0;
+      }
+
+      pre.one-liner code {
+        font-family: var(--mono);
+        font-size: 0.88rem;
+      }
+
+      .tab-row {
+        display: flex;
+        gap: 0.4rem;
+        margin-top: 1.5rem;
+      }
+
+      .tab-btn {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 0.35rem 0.9rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+
+      .tab-btn.active {
+        background: var(--accent);
+        color: var(--accent-fg);
+        border-color: var(--accent);
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      footer {
+        margin-top: 4.5rem;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 0.85rem;
+      }
+
+      footer a {
+        color: var(--text-muted);
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="topbar">
+      <a class="brand" href="#">
+        <img src="favicon.png" alt="" />
+        DepRadar
+      </a>
+      <select id="lang-select" aria-label="Language"></select>
+    </nav>
+
+    <main>
+      <header class="hero">
+        <img src="logo.png" alt="DepRadar logo" />
+        <h1>DepRadar</h1>
+        <p class="tagline" data-i18n="landing.tagline">
+          Detects outdated Rust, JavaScript, Python, Go, PHP, Ruby, and Java dependencies — locally or on a GitHub repository.
+        </p>
+        <p class="ecosystems-line" data-i18n="landing.ecosystems">Rust · JavaScript · Python · Go · PHP · Ruby · Java</p>
+        <div class="cta-row">
+          <a class="btn primary" href="#install" data-i18n="landing.installBtn">Install</a>
+          <a class="btn" href="https://github.com/depradar-app/depradar" data-i18n="landing.githubBtn">View on GitHub</a>
+        </div>
+      </header>
+
+      <section id="install">
+        <h2 data-i18n="landing.install.title">Install</h2>
+        <p class="lead" data-i18n="landing.install.lead">One command for your platform, or pick a package below.</p>
+
+        <div class="tab-row" id="install-tabs">
+          <button class="tab-btn active" data-os="mac" data-i18n="landing.tab.macLinux">macOS / Linux</button>
+          <button class="tab-btn" data-os="win" data-i18n="landing.tab.windows">Windows</button>
+        </div>
+
+        <pre class="one-liner" id="install-mac"><code id="install-mac-code">curl -fsSL https://depradar-app.github.io/depradar/install.sh | sh</code><button class="copy-btn" data-copy="install-mac-code" data-i18n-title="landing.copyLabel" aria-label="Copy" title="Copy">📋</button></pre>
+        <pre class="one-liner hidden" id="install-win"><code id="install-win-code">irm https://depradar-app.github.io/depradar/install.ps1 | iex</code><button class="copy-btn" data-copy="install-win-code" data-i18n-title="landing.copyLabel" aria-label="Copy" title="Copy">📋</button></pre>
+
+        <div class="platform-grid">
+          <div class="platform-card">
+            <h3><span data-i18n="landing.install.mac.title">macOS (Homebrew)</span></h3>
+            <div class="cmd-row">
+              <code class="cmd" id="install-mac-cmd">brew install depradar-app/tap/depradar</code>
+              <button class="copy-btn" data-copy="install-mac-cmd" data-i18n-title="landing.copyLabel" aria-label="Copy" title="Copy">📋</button>
+            </div>
+            <a class="direct" data-asset=".dmg" data-i18n="landing.install.mac.dmgLink" href="https://github.com/depradar-app/depradar/releases/latest">Or download the .dmg directly →</a>
+          </div>
+          <div class="platform-card">
+            <h3><span data-i18n="landing.install.deb.title">Debian / Ubuntu</span></h3>
+            <div class="cmd-row">
+              <code class="cmd" id="install-deb-cmd">sudo apt install ./depradar_*.deb</code>
+              <button class="copy-btn" data-copy="install-deb-cmd" data-i18n-title="landing.copyLabel" aria-label="Copy" title="Copy">📋</button>
+            </div>
+            <a class="direct" data-asset="_amd64.deb" data-i18n="landing.install.deb.link" href="https://github.com/depradar-app/depradar/releases/latest">Download the .deb →</a>
+          </div>
+          <div class="platform-card">
+            <h3><span data-i18n="landing.install.appimage.title">Linux (AppImage)</span></h3>
+            <div class="cmd-row">
+              <code class="cmd" id="install-appimage-cmd">chmod +x depradar_*.AppImage && ./depradar_*.AppImage</code>
+              <button class="copy-btn" data-copy="install-appimage-cmd" data-i18n-title="landing.copyLabel" aria-label="Copy" title="Copy">📋</button>
+            </div>
+            <a class="direct" data-asset=".AppImage" data-i18n="landing.install.appimage.link" href="https://github.com/depradar-app/depradar/releases/latest">Download the AppImage →</a>
+          </div>
+          <div class="platform-card">
+            <h3><span data-i18n="landing.install.windows.title">Windows</span></h3>
+            <div class="cmd-row">
+              <code class="cmd" id="install-windows-cmd" data-i18n="landing.install.windows.cmd">Run the installer, then follow the setup wizard</code>
+              <button class="copy-btn" data-copy="install-windows-cmd" data-i18n-title="landing.copyLabel" aria-label="Copy" title="Copy">📋</button>
+            </div>
+            <a class="direct" data-asset="x64-setup.exe" data-i18n="landing.install.windows.link" href="https://github.com/depradar-app/depradar/releases/latest">Download the .exe →</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="uninstall">
+        <h2 data-i18n="landing.uninstall.title">Uninstall</h2>
+        <p class="lead" data-i18n="landing.uninstall.lead">One command for your platform, or remove it manually.</p>
+
+        <div class="tab-row" id="uninstall-tabs">
+          <button class="tab-btn active" data-os="mac" data-i18n="landing.tab.macLinux">macOS / Linux</button>
+          <button class="tab-btn" data-os="win" data-i18n="landing.tab.windows">Windows</button>
+        </div>
+
+        <pre class="one-liner" id="uninstall-mac"><code id="uninstall-mac-code">curl -fsSL https://depradar-app.github.io/depradar/uninstall.sh | sh</code><button class="copy-btn" data-copy="uninstall-mac-code" data-i18n-title="landing.copyLabel" aria-label="Copy" title="Copy">📋</button></pre>
+        <pre class="one-liner hidden" id="uninstall-win"><code id="uninstall-win-code">irm https://depradar-app.github.io/depradar/uninstall.ps1 | iex</code><button class="copy-btn" data-copy="uninstall-win-code" data-i18n-title="landing.copyLabel" aria-label="Copy" title="Copy">📋</button></pre>
+
+        <div class="platform-grid">
+          <div class="platform-card">
+            <h3><span data-i18n="landing.uninstall.mac.title">macOS</span></h3>
+            <div class="cmd-row">
+              <code class="cmd" id="uninstall-mac-cmd">brew uninstall --cask depradar-app/tap/depradar</code>
+              <button class="copy-btn" data-copy="uninstall-mac-cmd" data-i18n-title="landing.copyLabel" aria-label="Copy" title="Copy">📋</button>
+            </div>
+            <span class="note" data-i18n="landing.uninstall.mac.note">
+              Installed by dragging the .dmg instead? Move DepRadar.app to the Trash.
+            </span>
+          </div>
+          <div class="platform-card">
+            <h3><span data-i18n="landing.uninstall.deb.title">Debian / Ubuntu</span></h3>
+            <div class="cmd-row">
+              <code class="cmd" id="uninstall-deb-cmd">sudo apt remove depradar</code>
+              <button class="copy-btn" data-copy="uninstall-deb-cmd" data-i18n-title="landing.copyLabel" aria-label="Copy" title="Copy">📋</button>
+            </div>
+          </div>
+          <div class="platform-card">
+            <h3><span data-i18n="landing.uninstall.appimage.title">Linux (AppImage)</span></h3>
+            <div class="cmd-row">
+              <code class="cmd" id="uninstall-appimage-cmd">rm ~/.local/bin/depradar</code>
+              <button class="copy-btn" data-copy="uninstall-appimage-cmd" data-i18n-title="landing.copyLabel" aria-label="Copy" title="Copy">📋</button>
+            </div>
+            <span class="note" data-i18n="landing.uninstall.appimage.note">
+              (or wherever you placed the AppImage file — it's portable, nothing else to clean up)
+            </span>
+          </div>
+          <div class="platform-card">
+            <h3><span data-i18n="landing.uninstall.windows.title">Windows</span></h3>
+            <div class="cmd-row">
+              <code class="cmd" id="uninstall-windows-cmd" data-i18n="landing.uninstall.windows.cmd">Settings → Apps → DepRadar → Uninstall</code>
+              <button class="copy-btn" data-copy="uninstall-windows-cmd" data-i18n-title="landing.copyLabel" aria-label="Copy" title="Copy">📋</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <p>
+          <a href="https://github.com/depradar-app/depradar" data-i18n="landing.footer.source">Source</a> ·
+          <a href="https://github.com/depradar-app/depradar/releases" data-i18n="landing.footer.releases">Releases</a> ·
+          <a href="https://github.com/depradar-app/homebrew-tap" data-i18n="landing.footer.tap">Homebrew tap</a>
+        </p>
+      </footer>
+    </main>
+
+    <script src="landing.js"></script>
+  </body>
+</html>

@@ -1,0 +1,17 @@
+[package]
+name = "cli"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+api = { workspace = true }
+tokio = { workspace = true, features = ["time"] }
+serde.workspace = true
+anyhow = "1"
+renamed = { package = "regex", version = "1.10" }
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["winuser"] }
+
+[dev-dependencies]
+tempfile = "3"

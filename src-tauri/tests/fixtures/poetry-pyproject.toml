@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "svc"
+version = "0.1.0"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+requests = "^2.28.0"
+Django = ">=4.2,<5.0"
+typing_extensions = "~4.9"
+internal = { path = "../internal" }
+fastapi = { version = "^0.110", extras = ["all"] }
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+
+[build-system]
+requires = ["poetry-core"]
