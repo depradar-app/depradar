@@ -16,7 +16,7 @@ pub type WorkspaceDeps = HashMap<String, (String, String)>;
 /// reported under its real crate name, and `{ workspace = true }` entries are
 /// resolved through `workspace` (the root manifest's table).
 pub fn parse_cargo_toml(content: &str, workspace: Option<&WorkspaceDeps>) -> Vec<(String, String)> {
-    let Ok(doc) = content.parse::<Value>() else {
+    let Ok(doc) = toml::from_str::<Value>(content) else {
         return vec![];
     };
 
@@ -44,7 +44,7 @@ pub fn parse_cargo_toml(content: &str, workspace: Option<&WorkspaceDeps>) -> Vec
 /// True when some dependency entry is `{ workspace = true }`, i.e. its
 /// version lives in an ancestor manifest.
 pub fn uses_workspace_deps(content: &str) -> bool {
-    let Ok(doc) = content.parse::<Value>() else {
+    let Ok(doc) = toml::from_str::<Value>(content) else {
         return false;
     };
     let inherits = |table: &Value| {
@@ -68,7 +68,7 @@ pub fn uses_workspace_deps(content: &str) -> bool {
 /// The `[workspace.dependencies]` table of a workspace root manifest.
 pub fn parse_workspace_deps(content: &str) -> WorkspaceDeps {
     let mut out = HashMap::new();
-    let Ok(doc) = content.parse::<Value>() else {
+    let Ok(doc) = toml::from_str::<Value>(content) else {
         return out;
     };
     if let Some(Value::Table(table)) = doc.get("workspace").and_then(|w| w.get("dependencies")) {

@@ -289,7 +289,7 @@ pub fn parse_gradle(content: &str) -> Vec<(String, String)> {
 
 /// Dependencies of a Gradle version catalog (`gradle/libs.versions.toml`).
 pub fn parse_version_catalog(content: &str) -> Vec<(String, String)> {
-    let Ok(doc) = content.parse::<toml::Value>() else {
+    let Ok(doc) = toml::from_str::<toml::Value>(content) else {
         return vec![];
     };
     let versions = doc.get("versions").and_then(|v| v.as_table());

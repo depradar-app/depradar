@@ -102,7 +102,7 @@ fn push_poetry_table(deps: &mut Vec<(String, String)>, table: Option<&toml::Valu
 }
 
 pub fn parse_pyproject_toml(content: &str) -> Vec<(String, String)> {
-    let doc: toml::Value = match content.parse() {
+    let doc: toml::Value = match toml::from_str(content) {
         Ok(v) => v,
         Err(_) => return vec![],
     };
@@ -176,7 +176,7 @@ fn split_requirement(spec: &str) -> Option<(String, String)> {
 /// entries (`poetry.lock`, `uv.lock`, `pdm.lock`). Names are PEP 503
 /// normalised. Returns an empty map if the file doesn't parse as TOML.
 pub fn parse_poetry_lock(content: &str) -> HashMap<String, String> {
-    let Ok(doc) = content.parse::<toml::Value>() else {
+    let Ok(doc) = toml::from_str::<toml::Value>(content) else {
         return HashMap::new();
     };
 
