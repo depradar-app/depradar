@@ -1,6 +1,6 @@
 [package]
 name = "depradar"
-version = "1.0.0"
+version = "1.0.1"
 description = "Detects outdated and vulnerable dependencies in local projects and GitHub repositories"
 authors = ["Sikander RAVATE"]
 edition = "2021"
